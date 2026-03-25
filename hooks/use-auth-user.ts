@@ -15,11 +15,9 @@ export function useAuthUser() {
         (async () => {
             const { data } = await supabase.auth.getUser()
             const { data: userProfile } = await supabase.from('user_profiles').select('*').eq('id', data.user?.id).single()
-
             setUser({ ...userProfile })
-
         })()
-    }, [supabase])
+    }, [supabase, user])
 
 
     useEffect(() => {

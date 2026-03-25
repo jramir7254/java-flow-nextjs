@@ -18,7 +18,7 @@ export function useUser() {
             setUser(data.user)
 
         })()
-    }, [supabase])
+    }, [supabase, user])
 
     return { user }
 }
