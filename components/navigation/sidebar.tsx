@@ -31,8 +31,7 @@ import {
 } from "@/components/ui/sidebar"
 import { usePathname, } from 'next/navigation';
 
-// import { logger } from "@/lib/logger";
-// import { CollapsibleTrigger, CollapsibleContent, Collapsible } from "../ui/collapsible";
+import { logger } from "@/lib/logger";
 import Link from "next/link";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";
 import Avatar from "./avatar";
@@ -81,12 +80,11 @@ const matchPath = (pathname: string, link: string | undefined) => {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const pathname = usePathname();
 
-    // const { data } = authClient.useSession();
+
 
     const isAuthed = !!true
 
 
-    // logger.debug("[PATH]", pathname, pathname === '/account/*')
 
 
     return (
@@ -95,7 +93,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
-                            {/* <Avatar /> */}
+                            <Avatar />
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>

@@ -1,21 +1,42 @@
 import { createClient } from '@/lib/supabase/server'
 import React from 'react'
 import CourseCard from './_components/course-card'
+import AddCourseButton from './_components/add-course-button'
 
 
 export default async function CoursesPage() {
-
     const supabase = await createClient()
 
-    const u = supabase.auth.getUser()
+    const { data: userData } = await supabase.auth.getUser()
 
-    const { data, error } = await supabase.from('courses').select('*')
+    const { user } = userData
 
+    console.log({ user })
+
+    const { data, error } = await supabase
+        .from('course_enrollments')
+        .select(`
+            *,
+            courses(*)
+        `)
+        .eq('user_id', user?.id)
+
+
+    console.log({ data })
 
 
     return (
-        <div className='grid size-full gap-2'>
-            {data?.map(c => <CourseCard key={c.id} course={c}></CourseCard>)}
+        <div className='px-4 py-2'>
+            <header className='flex'>
+                <div className='ml-auto'>
+
+                    <AddCourseButton />
+                </div>
+            </header>
+
+            <div className='size-full  flex flex-wrap  gap-4 '>
+                {data?.map(c => <CourseCard key={c.course_id} course={c?.courses}></CourseCard>)}
+            </div>
         </div>
     )
 }

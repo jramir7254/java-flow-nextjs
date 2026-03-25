@@ -19,6 +19,9 @@
 
 @theme inline {
     --font-nunito: var(--font-nunito);
+    --font-geist: var(--font-geist-sans);
+    --font-open-sans: var(--font-open-sans);
+    --font-inter: var(--font-inter);
     --color-highlight: var(--highlight);
 }
 

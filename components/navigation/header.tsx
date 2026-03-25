@@ -15,9 +15,9 @@ export default function Header() {
                 <SidebarTrigger className="-ml-1" />
                 <Separator
                     orientation="vertical"
-                    className="mr-2 data-[orientation=vertical]:h-4"
+                    className="mr-2 data-[orientation=vertical]:h-8"
                 />
-                {/* <NavLink path='/auth/sign-in' text='Sign In' guest /> */}
+                <div>Sign in</div>
             </div>
             <div className="lg:ml-auto mr-5 lg:mr-10">
                 <ModeSwitch />

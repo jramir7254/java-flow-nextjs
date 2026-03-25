@@ -11,12 +11,19 @@ export default async function ProtectedPage() {
         redirect('/auth/login')
     }
 
+    const { data: userData } = await supabase.auth.getUser()
+
+    const { data: user } = await supabase.from('user_profiles').select('*').eq('id', userData.user?.id)
+
     return (
         <div className="flex flex-1 font-nunito w-full items-center justify-center gap-2">
             <p>
                 Hello <span>{data.claims.email}</span>
             </p>
             <LogoutButton />
+            <pre>
+                {JSON.stringify(user, null, 4)}
+            </pre>
         </div>
     )
 }
