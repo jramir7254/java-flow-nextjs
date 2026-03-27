@@ -17,6 +17,7 @@ export default async function CoursesPage() {
         .from('course_enrollments')
         .select(`
             *,
+            
             courses(*)
         `)
         .eq('user_id', user?.id)

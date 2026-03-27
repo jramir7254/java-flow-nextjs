@@ -3,18 +3,18 @@ import { createClient } from "@/lib/supabase/server";
 import React from "react";
 
 export default async function CoursePage({
-  params,
+    params,
 }: {
-  params: Promise<{ questionId: string }>;
+    params: Promise<{ questionId: string }>;
 }) {
-  const { questionId } = await params;
+    const { questionId } = await params;
 
-  const supabase = await createClient();
+    const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("question_details")
-    .select(
-      `
+    const { data, error } = await supabase
+        .from("courses")
+        .select(
+            `
         id,
         instructions,
         ai_enabled,
@@ -40,9 +40,12 @@ export default async function CoursePage({
             is_example
         )
     `,
-    )
-    .eq("id", questionId)
-    .single();
+        )
+        .eq("id", questionId)
+        .single();
 
-  return <ScrollArea>{JSON.stringify(data)}</ScrollArea>;
+    return <ScrollArea>{JSON.stringify(data)}</ScrollArea>;
 }
+
+
+
