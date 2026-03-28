@@ -1,5 +1,6 @@
 'use server'
 
+import { ContentItem } from '@/types'
 import { createClient } from './server'
 import { redirect } from 'next/navigation'
 
@@ -50,3 +51,32 @@ export async function enrollToCourse2(courseId: string) {
     //
 
 }
+
+
+
+
+export async function getFileContents(item: ContentItem) {
+
+    const supabase = await createClient()
+
+    const { data, error } = await supabase.auth.getClaims()
+    if (error || !data?.claims) {
+        redirect('/auth/login')
+    }
+
+    if (item.type === 'file') {
+        const { data, error } = await supabase.from('md_file_details').select('*').eq('id', item.id).single()
+        return data.markdown_content
+    }
+
+    if (item.type === 'question') {
+        //    const { data, error } = await supabase.from('md_file_details').select('*').eq('id', item.id).single()
+        return ""
+    }
+
+
+
+
+}
+
+

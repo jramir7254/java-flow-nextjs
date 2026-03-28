@@ -8,7 +8,8 @@ import { Separator } from "@/components/ui/separator";
 import { AppSidebar } from "@/components/navigation/sidebar";
 import { AuthProvider } from "@/providers/auth-provider";
 import { createClient } from "@/lib/supabase/server";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { TooltipProvider } from "@/components/ui/tooltip"
+
 
 const geistSans = Geist({
     variable: "--font-geist-sans",
@@ -59,18 +60,18 @@ export default async function RootLayout({
             >
                 <AppProviders>
                     <AuthProvider initialUser={user}>
+                        <TooltipProvider>
 
-                        <AppSidebar />
-                        <SidebarInset>
-                            <Header />
-                            <Separator />
-                            <ScrollArea className="h-[90vh]">
+                            <AppSidebar />
+                            <SidebarInset>
+                                <Header />
+                                <Separator />
 
-                                <main className="flex flex-1 max-w-screen flex-col gap-4 p-0 pt-0 overflow-x-hidden">
+                                <main className="flex flex-1 flex-col overflow-hidden">
                                     {children}
                                 </main>
-                            </ScrollArea>
-                        </SidebarInset>
+                            </SidebarInset>
+                        </TooltipProvider>
                     </AuthProvider>
                 </AppProviders>
             </body>
