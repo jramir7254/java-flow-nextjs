@@ -1,48 +1,58 @@
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { createClient } from "@/lib/supabase/server";
-import React from "react";
+import React from 'react'
+import { createClient } from '@/lib/supabase/server'
+import SolveWorkspace, { QuestionWithDetails } from './solve-workspace'
 
-export default async function CoursePage({
+export default async function SolvePage({
   params,
 }: {
-  params: Promise<{ questionId: string }>;
+  params: Promise<{ questionId: string }>
 }) {
-  const { questionId } = await params;
+  const { questionId } = await params
+  const supabase = await createClient()
 
-  const supabase = await createClient();
-
+  // TODO: error screen if not found
   const { data, error } = await supabase
-    .from("question_details")
-    .select(
-      `
-        id,
-        instructions,
-        ai_enabled,
-        content_item:content_items!inner (
-            name,
-            course:courses (
+    .from('question_details')
+    .select(`
+            id,
+            instructions,
+            ai_enabled,
+            content_item:content_items!inner (
+                name,
+                course:courses (
+                    id,
+                    name
+                )
+            ),
+            code_files (
                 id,
-                name
+                file_name,
+                initial_content,
+                is_editable,
+                is_hidden
+            ),
+            test_cases (
+                id,
+                input,
+                expected_output,
+                is_public,
+                is_example
+            ),
+            answers (
+                content
             )
-        ),
-        code_files (
-            id,
-            file_name,
-            initial_content,
-            is_editable,
-            is_hidden
-        ),
-        test_cases (
-            id,
-            input,
-            expected_output,
-            is_public,
-            is_example
-        )
-    `,
-    )
-    .eq("id", questionId)
+        `)
+    .eq('id', questionId)
     .single();
 
-  return <ScrollArea>{JSON.stringify(data)}</ScrollArea>;
+  if (error) {
+    return <div>Error: {error.message}</div>
+  }
+
+  const question = data as unknown as QuestionWithDetails
+
+  return (
+    <SolveWorkspace questionInfo={question} />
+  )
 }
+

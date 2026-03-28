@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { createClient } from '@/lib/supabase/server'
 
@@ -15,11 +16,13 @@ export default async function ProtectedPage() {
     // const { data: user } = await supabase.from('user_profiles').select('*').eq('id', userData.user?.id)
 
     return (
-        <div className="flex flex-1 font-nunito w-full items-center justify-center gap-2">
+        <ScrollArea className="h-full">
+            <div className="flex flex-1 font-nunito w-full items-center justify-center gap-2">
 
-            <pre>
-                {JSON.stringify(user, null, 4)}
-            </pre>
-        </div>
+                <pre>
+                    {JSON.stringify(user, null, 4)}
+                </pre>
+            </div>
+        </ScrollArea>
     )
 }
