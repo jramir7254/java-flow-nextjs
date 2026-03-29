@@ -16,9 +16,11 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { enrollToCourse, enrollToCourse2 } from '@/lib/supabase/actions'
+import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
 export default function AddCourseButton() {
+    const router = useRouter();
     const [openAdd, setOpenAdd] = useState(false)
     const [openInfo, setOpenInfo] = useState(false)
     const [course, setCourse] = useState<any>(null)
@@ -33,7 +35,7 @@ export default function AddCourseButton() {
             setCourse(result)
             setOpenAdd(false)
             setOpenInfo(true)
-        } catch (e) {
+        } catch (e:any) {
             toast.error(e?.message)
 
         }
@@ -104,8 +106,9 @@ export default function AddCourseButton() {
                             try {
                                 await enrollToCourse2(course.id)
                                 toast.success('Enrolled')
-                            } catch (error) {
-                                toast.error(e?.message)
+                                router.refresh()
+                            } catch (error:any) {
+                                toast.error(String(error))
 
                             }
                         }}>

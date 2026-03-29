@@ -29,7 +29,7 @@ export default function CourseCard({ course }: { course: Course }) {
 
 
     return (
-        <Card className="relative w-full aspect-square max-h-fit! max-w-sm pt-0 ">
+        <Card className="relative w-full aspect-square !max-h-fit max-w-sm pt-0 flex-col overflow-hidden">
             <Image
                 width={0}
                 height={0}
@@ -37,9 +37,10 @@ export default function CourseCard({ course }: { course: Course }) {
                 alt="Event cover"
                 className="relative z-20  w-full object-cover brightness-60 grayscale dark:brightness-40"
             />
-            <CardHeader>
-                <CardAction>
-                    <Badge variant="secondary">Featured</Badge>
+            <CardHeader className="flex-1">
+                <CardAction className="mb-2">
+                    {/* TODO: put author name here */}
+                    <Badge variant="secondary">{course.course_code}</Badge>
                 </CardAction>
                 <CardTitle>{course.name}</CardTitle>
                 <CardDescription>{course.description}</CardDescription>

@@ -1,32 +1,39 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect } from 'react'
 import {
     Sheet,
-    SheetClose,
     SheetContent,
     SheetDescription,
-    SheetFooter,
     SheetHeader,
     SheetTitle,
     SheetTrigger,
 } from "@/components/ui/sheet"
 import { ContentItem } from '@/types'
 import { getFileContents } from '@/lib/supabase/actions';
+import Link from 'next/link';
 
 export default function Content({ children, content }: { children: React.ReactNode, content: ContentItem }) {
     const [fileText, setFileText] = React.useState('');
 
     useEffect(() => {
+        if (content.type === 'question') return;
         (async () => {
             const data = await getFileContents(content);
             setFileText(data);
         })();
     }, [content]);
 
+    if (content.type === 'question') {
+        return (
+            <Link href={`/question/solve/${content.id}`} className="w-full">
+                {children}
+            </Link>
+        )
+    }
 
     return (
         <Sheet >
             <SheetTrigger asChild>
-                <div className="flex items-center gap-2 w-full">
+                <div className="w-full cursor-pointer">
                     {children}
                 </div>
             </SheetTrigger>

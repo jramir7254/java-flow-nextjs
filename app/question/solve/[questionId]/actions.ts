@@ -11,7 +11,7 @@ export interface CodeSubmissionFile {
 }
 
 export async function submitSolution(
-    questionId: string, 
+    questionId: string,
     files: CodeSubmissionFile[]
 ): Promise<Record<string, SubmitResult>> {
     const supabase = await createClient();
@@ -60,7 +60,7 @@ export async function submitSolution(
             }
 
             const pistonData = await pistonRes.json();
-            
+
             const output = pistonData.run?.stdout?.trim() || "";
             const stderr = pistonData.run?.stderr || "";
             const expected = (tc.expected_output || '').trim();

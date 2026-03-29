@@ -2,17 +2,21 @@
 
 import React from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import Markdown from 'react-markdown';
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { Markdown } from '@/components/ui/markdown';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import AiChatPane from './ai-chat';
 
 interface InfoPaneProps {
     questionInfo?: string;
     answer?: string;
     aiEnabled?: boolean;
+    getLatestCode?: () => any[];
+    chatMessages?: { id: string, role: string, content: string }[];
+    setChatMessages?: React.Dispatch<React.SetStateAction<{ id: string, role: string, content: string }[]>>;
 }
 // BUG: The markdown renderer text doesnt break words
 // TODO: Style the markdown renderer better
-export default function InfoPane({ questionInfo, answer, aiEnabled }: InfoPaneProps) {
+export default function InfoPane({ questionInfo, answer, aiEnabled, getLatestCode, chatMessages, setChatMessages }: InfoPaneProps) {
     const tabItems = [];
     if (questionInfo) tabItems.push({ id: 'question', title: 'Question' });
     if (answer) tabItems.push({ id: 'answer', title: 'Answer' });
@@ -42,7 +46,7 @@ export default function InfoPane({ questionInfo, answer, aiEnabled }: InfoPanePr
                 {questionInfo && (
                     <TabsContent value="question" className="flex-1 m-0 focus-visible:outline-none overflow-hidden h-full">
                         <ScrollArea className="h-full w-full">
-                            <div className="p-4 prose prose-sm dark:prose-invert max-w-none break-words w-full">
+                            <div className="p-4 prose prose-sm dark:prose-invert max-w-none wrap-break-word w-full">
                                 <Markdown>{questionInfo}</Markdown>
                             </div>
                         </ScrollArea>
@@ -52,7 +56,7 @@ export default function InfoPane({ questionInfo, answer, aiEnabled }: InfoPanePr
                 {answer && (
                     <TabsContent value="answer" className="flex-1 m-0 focus-visible:outline-none overflow-hidden h-full">
                         <ScrollArea className="h-full w-full">
-                            <div className="p-4 prose prose-sm dark:prose-invert max-w-none break-words w-full">
+                            <div className="p-4 prose prose-sm dark:prose-invert max-w-none wrap-break-word w-full">
                                 <Markdown>{answer}</Markdown>
                             </div>
                         </ScrollArea>
@@ -60,10 +64,13 @@ export default function InfoPane({ questionInfo, answer, aiEnabled }: InfoPanePr
                 )}
 
                 {aiEnabled && (
-                    <TabsContent value="ai" className="flex-1 m-0 focus-visible:outline-none overflow-hidden h-full">
-                        <div className="flex h-full w-full flex-col items-center justify-center text-muted-foreground p-4">
-                            ai chat
-                        </div>
+                    <TabsContent value="ai" className="flex-1 m-0 focus-visible:outline-none overflow-hidden h-full relative">
+                        <AiChatPane 
+                            instructions={questionInfo}
+                            getLatestCode={getLatestCode}
+                            chatMessages={chatMessages}
+                            setChatMessages={setChatMessages}
+                        />
                     </TabsContent>
                 )}
             </Tabs>

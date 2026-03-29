@@ -16,6 +16,8 @@ import TestCasesPane, { SubmitResult } from './_panes/test-cases-pane'
 import { submitSolution } from './actions'
 import { CodeFile } from '@/components/code-editor/full-editor'
 import { Tables } from '@/types/supabase'
+import { useTelemetry } from '@/components/providers/telemetry-provider'
+import { useEffect } from 'react'
 
 export type QuestionWithDetails = Tables<"question_details"> & {
     content_item: {
@@ -31,6 +33,24 @@ export default function SolveWorkspace({ questionInfo }: { questionInfo: Questio
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [submitResults, setSubmitResults] = useState<Record<string, SubmitResult>>({})
     const latestFilesRef = useRef<CodeFile[]>([])
+    const [chatMessages, setChatMessages] = useState<{ id: string, role: string, content: string }[]>([])
+
+    const telemetry = useTelemetry()
+    const submitResultsRef = useRef(submitResults)
+    submitResultsRef.current = submitResults
+
+    useEffect(() => {
+        if (telemetry) {
+            telemetry.setSessionStateGetter(() => {
+                const finalCode = latestFilesRef.current.map(f => `${f.name}:\n${f.content || ''}`).join('\n\n')
+                const results = submitResultsRef.current
+                const passedVals = Object.values(results)
+                // TypeScript requires boolean for isPassed
+                const isPassed = passedVals.length > 0 && passedVals.every(r => (r as any).passed === true)
+                return { finalCode, isPassed }
+            })
+        }
+    }, [telemetry])
 
     const handleRun = async () => {
         if (!questionInfo) return;
@@ -46,6 +66,13 @@ export default function SolveWorkspace({ questionInfo }: { questionInfo: Questio
 
             const results = await submitSolution(questionInfo.id, currentFiles);
             setSubmitResults(results);
+
+            const passedVals = Object.values(results);
+            const isPassed = passedVals.length > 0 && passedVals.every(r => (r as any).passed === true);
+            telemetry?.track('SUBMIT', {
+                status: isPassed ? 'passed' : 'failed',
+                code_snapshot: currentFiles
+            });
         } catch (error) {
             console.error(error);
             // Optionally could set error state here, but for now we log it
@@ -96,6 +123,9 @@ export default function SolveWorkspace({ questionInfo }: { questionInfo: Questio
                             questionInfo={questionInfo?.instructions}
                             answer={questionInfo?.answers?.[0]?.content}
                             aiEnabled={questionInfo?.ai_enabled ?? false}
+                            getLatestCode={() => latestFilesRef.current}
+                            chatMessages={chatMessages}
+                            setChatMessages={setChatMessages}
                         />
                     </ResizablePanel>
 

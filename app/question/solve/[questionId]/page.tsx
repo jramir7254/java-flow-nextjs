@@ -2,6 +2,8 @@ import React from 'react'
 import { createClient } from '@/lib/supabase/server'
 import SolveWorkspace, { QuestionWithDetails } from './solve-workspace'
 
+import { TelemetryProvider } from '@/components/providers/telemetry-provider'
+
 export default async function SolvePage({
     params,
 }: {
@@ -11,6 +13,7 @@ export default async function SolvePage({
     const supabase = await createClient()
 
     // TODO: error screen if not found
+    // ERROR: Verify the student is enrolled before giving them the course
     const { data, error } = await supabase
         .from('question_details')
         .select(`
@@ -52,7 +55,9 @@ export default async function SolvePage({
     const question = data as unknown as QuestionWithDetails
 
     return (
-        <SolveWorkspace questionInfo={question} />
+        <TelemetryProvider questionId={question.id}>
+            <SolveWorkspace questionInfo={question} />
+        </TelemetryProvider>
     )
 }
 
