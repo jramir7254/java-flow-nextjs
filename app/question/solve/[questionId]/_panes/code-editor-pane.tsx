@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react'
 import { Tables } from '@/types/supabase'
 import { FullEditor, CodeFile } from '@/components/code-editor/full-editor'
+import type * as Monaco from 'monaco-editor';
+import { useTelemetry } from '@/components/providers/telemetry-provider';
 
 interface CodeEditorPaneProps {
     codeFiles?: Tables<"code_files">[];
@@ -10,6 +12,7 @@ interface CodeEditorPaneProps {
 }
 
 export default function CodeEditorPane({ codeFiles, onFilesChange }: CodeEditorPaneProps) {
+    const telemetry = useTelemetry();
     const [localFiles, setLocalFiles] = useState<CodeFile[]>([]);
 
     useEffect(() => {
@@ -35,11 +38,43 @@ export default function CodeEditorPane({ codeFiles, onFilesChange }: CodeEditorP
         });
     }
 
+    const handleEditorMount = (editor: any, monaco: any, file: CodeFile) => {
+        editor.onDidChangeModelContent((event: Monaco.editor.IModelContentChangedEvent) => {
+            const isUndo = event.isUndoing;
+            const isRedo = event.isRedoing;
+            event.changes.forEach((change: Monaco.editor.IModelContentChange) => {
+                // action type
+                let action = 'insert';
+
+                if (isUndo) {
+                    action = 'undo';
+                } else if (isRedo) {
+                    action = 'redo';
+                } else if (change.text === '' && change.rangeLength > 0) {
+                    action = 'delete';
+                } else if (change.text.length > 1 && change.rangeLength === 0) {
+                    action = 'paste';
+                } else if (change.text.length > 0 && change.rangeLength > 0) {
+                    action = 'replace'; // highlighted and typing over it
+                }
+                telemetry?.track('TEXT_EDIT', { // TODO: update to text_edit
+                    source: 'editor',
+                    file_id: file.id,
+                    file_name: file.name,
+                    action: action,
+                    range: change.range,
+                    text_added: change.text,
+                    text_removed_length: change.rangeLength,
+                });
+            });
+        });
+    }
     return (
         <div className="h-full flex flex-col overflow-hidden">
-            <FullEditor 
-                files={localFiles} 
+            <FullEditor
+                files={localFiles}
                 onFileChange={handleFileChange}
+                onMount={handleEditorMount}
             />
         </div>
     )

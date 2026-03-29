@@ -45,7 +45,6 @@ export default function SolveWorkspace({ questionInfo }: { questionInfo: Questio
                 const finalCode = latestFilesRef.current.map(f => `${f.name}:\n${f.content || ''}`).join('\n\n')
                 const results = submitResultsRef.current
                 const passedVals = Object.values(results)
-                // TypeScript requires boolean for isPassed
                 const isPassed = passedVals.length > 0 && passedVals.every(r => (r as any).passed === true)
                 return { finalCode, isPassed }
             })
@@ -54,14 +53,14 @@ export default function SolveWorkspace({ questionInfo }: { questionInfo: Questio
 
     const handleRun = async () => {
         if (!questionInfo) return;
-        
+
         setIsSubmitting(true);
         setSubmitResults({});
 
         try {
             const currentFiles = latestFilesRef.current.map(f => ({
                 fileName: f.name,
-                content: f.content || "" 
+                content: f.content || ""
             }));
 
             const results = await submitSolution(questionInfo.id, currentFiles);
@@ -134,8 +133,8 @@ export default function SolveWorkspace({ questionInfo }: { questionInfo: Questio
                     <ResizablePanel minSize="20">
                         <ResizablePanelGroup orientation="vertical">
                             <ResizablePanel minSize="20">
-                                <CodeEditorPane 
-                                    codeFiles={questionInfo?.code_files} 
+                                <CodeEditorPane
+                                    codeFiles={questionInfo?.code_files}
                                     onFilesChange={(files) => {
                                         latestFilesRef.current = files;
                                     }}
@@ -145,10 +144,10 @@ export default function SolveWorkspace({ questionInfo }: { questionInfo: Questio
                             <ResizableHandle className="h-2 bg-muted hover:bg-muted-foreground/20 transition-colors cursor-row-resize" />
 
                             <ResizablePanel minSize="20" defaultSize="30">
-                                <TestCasesPane 
-                                    testCases={questionInfo?.test_cases} 
-                                    submitResults={submitResults} 
-                                    loadingResult={isSubmitting} 
+                                <TestCasesPane
+                                    testCases={questionInfo?.test_cases}
+                                    submitResults={submitResults}
+                                    loadingResult={isSubmitting}
                                 />
                             </ResizablePanel>
                         </ResizablePanelGroup>

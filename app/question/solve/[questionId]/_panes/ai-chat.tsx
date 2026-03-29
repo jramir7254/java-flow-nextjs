@@ -18,8 +18,9 @@ import {
     PromptInputTextarea,
 } from "@/components/ui/prompt-input"
 import { Button } from "@/components/ui/button"
-import { ArrowUp, Square } from "lucide-react"
+import { ArrowUp, Square, Trash } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { useTelemetry } from "@/components/providers/telemetry-provider"
 
 interface AiChatPaneProps {
     instructions?: string;
@@ -32,14 +33,19 @@ export default function AiChatPane({ instructions, getLatestCode, chatMessages =
     const [input, setInput] = useState("")
     const [isLoading, setIsLoading] = useState(false)
 
+    const telemetry = useTelemetry()
+
     const handleValueChange = (value: string) => {
         setInput(value)
     }
 
     const onSubmitMessage = async () => {
         if (!input.trim() || isLoading) return;
+        const currentPrompt = input;
+        const userMsg = { id: Date.now().toString(), role: "user", content: currentPrompt };
 
-        const userMsg = { id: Date.now().toString(), role: "user", content: input };
+        const previousChatsSnapshot = [...chatMessages]; // for telemetry data, is this inefficient? yes 
+
         const newMessagesContext = [...chatMessages, userMsg];
 
         if (setChatMessages) setChatMessages(newMessagesContext);
@@ -47,7 +53,7 @@ export default function AiChatPane({ instructions, getLatestCode, chatMessages =
         setIsLoading(true);
 
         try {
-            let systemPrompt = "You are a helpful AI coding assistant. Help the user with their coding question.";
+            let systemPrompt = "You are a helpful AI coding assistant. You will be provided with the instructions of the problem they're solving, and the current code they have. Your goal is to answer any question a user may have, keep it short and simple but ensure you answer their entire question.";
             if (instructions) {
                 systemPrompt += "\n\nQuestion Instructions:\n" + instructions;
             }
@@ -61,9 +67,33 @@ export default function AiChatPane({ instructions, getLatestCode, chatMessages =
                 }
             }
 
+            // max 20 messages and 100k chars
+            let historyMessages = newMessagesContext.map(m => ({ role: m.role, content: m.content }));
+
+            if (historyMessages.length > 20) {
+                historyMessages = historyMessages.slice(-20);
+            }
+
+            let totalChars = 0;
+            const finalHistory: { role: string, content: string }[] = [];
+
+            // TODO: error if the prompt is > 100k chars
+            for (let i = historyMessages.length - 1; i >= 0; i--) {
+                const msg = historyMessages[i];
+                // cut latest prompt if over 100k
+                if (msg.role === "user" && msg.content.length > 100000) {
+                    msg.content = msg.content.slice(0, 100000);
+                }
+                if (totalChars + msg.content.length > 100000 && finalHistory.length > 0) {
+                    break;
+                }
+                totalChars += msg.content.length;
+                finalHistory.unshift(msg);
+            }
+
             const payloadMessages = [
                 { role: "system", content: systemPrompt },
-                ...newMessagesContext.map(m => ({ role: m.role, content: m.content }))
+                ...finalHistory
             ];
 
             const res = await fetch("/api/chat", {
@@ -91,15 +121,25 @@ export default function AiChatPane({ instructions, getLatestCode, chatMessages =
                 const chunkText = decoder.decode(value, { stream: true });
                 accumulatedAiContent += chunkText;
 
-                // Update the AI message in the state
+                // update message state
                 if (setChatMessages) {
                     setChatMessages((prev) =>
                         prev.map(msg => msg.id === aiMsgId ? { ...msg, content: accumulatedAiContent } : msg)
                     );
                 }
             }
+
+            // TODO: implement the same cutting logic to have a more accurate depiction of what the ai saw
+            telemetry?.track('PROMPT', {
+                system_prompt: systemPrompt,
+                previous_chats: previousChatsSnapshot,
+                prompt: currentPrompt,
+                response: accumulatedAiContent,
+                error: null,
+            });
         } catch (error) {
             console.error("Chat error:", error);
+            // TODO: log error in the telemetry as well
         } finally {
             setIsLoading(false);
         }
@@ -159,7 +199,19 @@ export default function AiChatPane({ instructions, getLatestCode, chatMessages =
                     className="w-full"
                 >
                     <PromptInputTextarea placeholder="Ask about this code..." />
-                    <PromptInputActions className="justify-end pt-2">
+                    <PromptInputActions className="flex w-full justify-between pt-2">
+                        <PromptInputAction tooltip="Clear chat">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 rounded-full text-muted-foreground hover:text-destructive"
+                                onClick={() => setChatMessages?.([])}
+                                disabled={chatMessages.length === 0 || isLoading}
+                            >
+                                <Trash className="size-4" />
+                            </Button>
+                        </PromptInputAction>
+                        
                         <PromptInputAction
                             tooltip={isLoading ? "Stop generation" : "Send message"}
                         >
@@ -168,7 +220,7 @@ export default function AiChatPane({ instructions, getLatestCode, chatMessages =
                                     variant="default"
                                     size="icon"
                                     className="h-8 w-8 rounded-full"
-                                    onClick={() => { /* Implement stop logic if needed later */ }}
+                                    onClick={() => { /* TODO: stop logic */ }}
                                 >
                                     <Square className="size-5 fill-current" />
                                 </Button>

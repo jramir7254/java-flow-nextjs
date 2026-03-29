@@ -35,8 +35,8 @@ export async function initTelemetrySession(questionId: string) {
 }
 
 export async function updateTelemetrySession(
-    sessionId: string, 
-    finalCode: string, 
+    sessionId: string,
+    finalCode: string,
     isPassed?: boolean,
     counts?: {
         ai_prompt_count: number,
@@ -69,7 +69,6 @@ export async function updateTelemetrySession(
     return { success: true }
 }
 
-// TODO: Update the counts in the telemetry_sessions table ie. number of runs, number of ai uses, etc.
 export async function flushTelemetryEvents(sessionId: string, events: any[]) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()

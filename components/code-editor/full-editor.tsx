@@ -16,9 +16,10 @@ interface FullEditorProps {
     files: CodeFile[];
     onFileChange?: (id: string, content: string) => void;
     className?: string;
+    onMount?: (editor: any, monaco: any, file: CodeFile) => void;
 }
 
-export function FullEditor({ files, onFileChange, className }: FullEditorProps) {
+export function FullEditor({ files, onFileChange, className, onMount }: FullEditorProps) {
     const [activeFileId, setActiveFileId] = useState<string | null>(null)
 
     useEffect(() => {
@@ -55,8 +56,8 @@ export function FullEditor({ files, onFileChange, className }: FullEditorProps) 
                             onClick={() => setActiveFileId(file.id)}
                             className={cn(
                                 "group relative flex items-center gap-2 px-4 py-2 text-sm transition-colors border-r",
-                                isActive 
-                                    ? "bg-background text-foreground font-medium" 
+                                isActive
+                                    ? "bg-background text-foreground font-medium"
                                     : "text-muted-foreground hover:bg-muted/30 hover:text-foreground"
                             )}
                         >
@@ -84,6 +85,7 @@ export function FullEditor({ files, onFileChange, className }: FullEditorProps) 
                         language={activeFile.language || "typescript"}
                         isEditable={activeFile.isEditable}
                         onChange={handleEditorChange}
+                        onMount={(editor, monaco) => onMount?.(editor, monaco, activeFile)}
                     />
                 ) : (
                     <div className="flex h-full items-center justify-center text-muted-foreground">

@@ -9,6 +9,10 @@ type TelemetryEvent = {
     payload: any;
 };
 
+// TODO: set the session to update the end stamp even if its a hard tab close
+// TODO: force flush function for things like submit?
+// TODO: dont flush the last item so that we can continue squashing?
+// TODO: total_time_ms tracking
 export class TelemetryManager {
     private buffer: TelemetryEvent[] = [];
     private sessionId: string | null = null;
@@ -37,20 +41,11 @@ export class TelemetryManager {
 
     private async initSession() {
         if (this.sessionId) return;
-        
-        // Use sessionStorage so Next.js Fast Refresh and Strict Mode don't spam the DB with orphaned sessions
-        const cacheKey = `telemetry_session_${this.questionId}`;
-        const cached = sessionStorage.getItem(cacheKey);
-        if (cached) {
-            this.sessionId = cached;
-            return;
-        }
 
         try {
             const res = await initTelemetrySession(this.questionId);
             if (res.success && res.sessionId) {
                 this.sessionId = res.sessionId;
-                sessionStorage.setItem(cacheKey, this.sessionId);
             }
         } catch (e) {
             console.error('Failed to init telemetry session', e);
@@ -63,6 +58,51 @@ export class TelemetryManager {
         if (type === 'PASTE') this.counts.paste_count++;
         if (type === 'SUBMIT') this.counts.submission_attempts++;
         if (type === 'PROMPT') this.counts.ai_prompt_count++;
+
+        if (type === 'TEXT_EDIT' && this.buffer.length > 0) {
+            const lastItem = this.buffer[this.buffer.length - 1];
+
+            if (lastItem.event_type === 'TEXT_EDIT') {
+                const lastPayload = lastItem.payload;
+                const now = new Date();
+                const lastTime = new Date(lastItem.created_at);
+                const timeDiff = now.getTime() - lastTime.getTime();
+
+                // strict squashing criteria, only squash for insert and delete
+                const isUnderTimeLimit = timeDiff <= 200;
+                const isSameSource = lastPayload.source === payload.source;
+                const isSameFile = lastPayload.file_id === payload.file_id;
+                const isSameAction = lastPayload.action === payload.action;
+
+                const isSquashableAction = payload.action === 'insert' || payload.action === 'delete';
+
+                if (isUnderTimeLimit && isSameSource && isSameFile && isSameAction && isSquashableAction) {
+
+                    // merge
+                    if (payload.action === 'insert') {
+                        // concatenate typed characters and expand range
+                        lastPayload.text_added += payload.text_added;
+
+                        if (payload.range && lastPayload.range) {
+                            lastPayload.range.endLineNumber = payload.range.endLineNumber;
+                            lastPayload.range.endColumn = payload.range.endColumn;
+                        }
+                    } else if (payload.action === 'delete') {
+                        // sum deletes and expand range
+                        lastPayload.text_removed_length += payload.text_removed_length;
+
+                        if (payload.range && lastPayload.range) {
+                            lastPayload.range.startLineNumber = Math.min(lastPayload.range.startLineNumber, payload.range.startLineNumber);
+                            lastPayload.range.startColumn = Math.min(lastPayload.range.startColumn, payload.range.startColumn);
+                        }
+                    }
+
+                    lastItem.created_at = now.toISOString();
+
+                    return;
+                }
+            }
+        }
 
         this.buffer.push({
             event_type: type,
@@ -99,16 +139,16 @@ export class TelemetryManager {
             clearInterval(this.flushInterval);
             this.flushInterval = null;
         }
-        
+
         let finalCode = "";
         let isPassed = false;
-        
+
         if (this.stateGetter) {
             const state = this.stateGetter()
             finalCode = state.finalCode
             isPassed = state.isPassed ?? false
         }
-        
+
         // flush any remaining events synchronously before session close
         await this.flush();
 

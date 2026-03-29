@@ -578,7 +578,7 @@ export type Database = {
         | "archived"
         | "completed"
       event_type_enum:
-        | "KEY"
+        | "TEXT_EDIT"
         | "CLICK"
         | "COPY"
         | "CUT"
@@ -734,7 +734,7 @@ export const Constants = {
         "completed",
       ],
       event_type_enum: [
-        "KEY",
+        "TEXT_EDIT",
         "CLICK",
         "COPY",
         "CUT",

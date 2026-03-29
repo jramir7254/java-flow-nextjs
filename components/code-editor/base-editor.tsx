@@ -9,16 +9,18 @@ export interface BaseEditorProps {
     onChange?: (value: string | undefined) => void;
     language?: string;
     isEditable?: boolean;
+    onMount?: (editor: any, monaco: any) => void;
 }
 
-export function BaseEditor({ 
-    value = "", 
-    onChange, 
-    language = "typescript", 
-    isEditable = true 
+export function BaseEditor({
+    value = "",
+    onChange,
+    language = "typescript",
+    isEditable = true,
+    onMount
 }: BaseEditorProps) {
     const { theme, resolvedTheme } = useTheme()
-    
+
     // Fallback to resolvedTheme to ensure proper styling if system theme is used
     const editorTheme = (theme === 'dark' || resolvedTheme === 'dark') ? 'vs-dark' : 'light'
 
@@ -29,6 +31,7 @@ export function BaseEditor({
             value={value}
             onChange={onChange}
             theme={editorTheme}
+            onMount={onMount}
             options={{
                 readOnly: !isEditable,
                 minimap: { enabled: false },

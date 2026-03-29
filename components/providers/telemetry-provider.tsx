@@ -32,9 +32,9 @@ export function TelemetryProvider({ questionId, children }: { questionId: string
             const target = e.target as HTMLElement;
             let context = 'PAGE';
 
-            // Identify the context accurately 
+            // TODO: fix these, they dont really work, also copy in the code editor doesnt work since i think it eats the event
             if (target.closest('.cm-editor') || target.closest('.monaco-editor') || target.closest('[data-panel="editor"]')) context = 'EDITOR';
-            else if (target.closest('.terminal-wrapper')) context = 'TERMINAL';
+            if (target.closest('.terminal-wrapper')) context = 'TERMINAL';
             else if (target.closest('[data-panel="ai"]')) context = 'AI_CHAT';
             else if (target.tagName === 'BODY') context = 'NO_FOCUS';
 
@@ -56,6 +56,11 @@ export function TelemetryProvider({ questionId, children }: { questionId: string
         window.addEventListener('cut', handleCut);
         window.addEventListener('paste', handlePaste);
 
+        const handleUnload = () => {
+            telemetry.destroy();
+        };
+        window.addEventListener('beforeunload', handleUnload);
+
         return () => {
             window.removeEventListener('focus', handleFocus);
             window.removeEventListener('blur', handleBlur);
@@ -64,6 +69,7 @@ export function TelemetryProvider({ questionId, children }: { questionId: string
             window.removeEventListener('copy', handleCopy);
             window.removeEventListener('cut', handleCut);
             window.removeEventListener('paste', handlePaste);
+            window.removeEventListener('beforeunload', handleUnload);
 
             telemetry.destroy();
         };
