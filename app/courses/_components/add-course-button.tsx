@@ -35,7 +35,7 @@ export default function AddCourseButton() {
             setCourse(result)
             setOpenAdd(false)
             setOpenInfo(true)
-        } catch (e:any) {
+        } catch (e: any) {
             toast.error(e?.message)
 
         }
@@ -57,15 +57,14 @@ export default function AddCourseButton() {
                 <DialogContent>
                     <form onSubmit={submit}>
                         <DialogHeader>
-                            <DialogTitle>Add a course</DialogTitle>
+                            <DialogTitle className="text-2xl font-bold pb-2">Add a course</DialogTitle>
                             <DialogDescription>
                                 Enter the course code below.
                             </DialogDescription>
                         </DialogHeader>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="courseCode">Course Code</Label>
-                            <Input name="courseCode" id="courseCode" />
+                        <div className="space-y-2 pt-2 pb-3">
+                            <Input name="courseCode" id="courseCode" placeholder="Course Code" />
                         </div>
 
                         <DialogFooter>
@@ -107,7 +106,7 @@ export default function AddCourseButton() {
                                 await enrollToCourse2(course.id)
                                 toast.success('Enrolled')
                                 router.refresh()
-                            } catch (error:any) {
+                            } catch (error: any) {
                                 toast.error(String(error))
 
                             }
