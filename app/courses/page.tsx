@@ -31,7 +31,6 @@ export default async function CoursesPage() {
             <div className='px-4 py-2'>
                 <header className='flex'>
                     <div className='ml-auto'>
-
                         <AddCourseButton />
                     </div>
                 </header>

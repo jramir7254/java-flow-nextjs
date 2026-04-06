@@ -47,7 +47,7 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
                     data: {
                         school_id: String(epccId)
                     },
-                    emailRedirectTo: `${window.location.origin}/protected`,
+                    emailRedirectTo: `${window.location.origin}/courses`,
                 },
             })
             if (error) throw error

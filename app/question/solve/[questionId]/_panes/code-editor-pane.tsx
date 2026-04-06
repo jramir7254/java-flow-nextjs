@@ -62,7 +62,7 @@ export default function CodeEditorPane({ codeFiles, onFilesChange }: CodeEditorP
                     file_id: file.id,
                     file_name: file.name,
                     action: action,
-                    range: change.range,
+                    range: { ...change.range },
                     text_added: change.text,
                     text_removed_length: change.rangeLength,
                 });
