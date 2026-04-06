@@ -20,6 +20,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { ArrowUp, Square, Trash } from "lucide-react"
 import { useTelemetry } from "@/providers/telemetry-provider"
+import { AI_SYSTEM_PROMPT } from "@/lib/ai-config"
 
 interface AiChatPaneProps {
     instructions?: string;
@@ -52,7 +53,7 @@ export default function AiChatPane({ instructions, getLatestCode, chatMessages =
         setIsLoading(true);
 
         try {
-            let systemPrompt = "You are a helpful AI coding assistant. You will be provided with the instructions of the problem they're solving, and the current code they have. Your goal is to answer any question a user may have, keep it short and simple but ensure you answer their entire question.";
+            let systemPrompt = AI_SYSTEM_PROMPT;
             if (instructions) {
                 systemPrompt += "\n\nQuestion Instructions:\n" + instructions;
             }

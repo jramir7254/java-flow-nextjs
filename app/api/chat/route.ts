@@ -1,4 +1,5 @@
 import Cerebras from '@cerebras/cerebras_cloud_sdk';
+import { AI_MODEL } from '@/lib/ai-config';
 
 const client = new Cerebras({
   apiKey: process.env.CEREBRAS_KEY,
@@ -18,7 +19,7 @@ export async function POST(req: Request) {
 
     const completionStream = await client.chat.completions.create({
       messages,
-      model: 'gpt-oss-120b',
+      model: AI_MODEL,
       stream: true,
     });
 

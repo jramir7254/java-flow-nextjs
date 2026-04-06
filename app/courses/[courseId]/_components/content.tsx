@@ -20,7 +20,7 @@ export default function Content({ children, content }: { children: React.ReactNo
         if (content.type === 'question') return;
         (async () => {
             const data = await getFileContents(content);
-            setFileText(data);
+            setFileText(data ?? '');
         })();
     }, [content]);
 

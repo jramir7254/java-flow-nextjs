@@ -3,6 +3,7 @@
 import React from 'react'
 import Editor from '@monaco-editor/react'
 import { useTheme } from 'next-themes'
+import { useSettings } from '@/providers/settings-provider'
 
 export interface BaseEditorProps {
     value?: string;
@@ -20,6 +21,7 @@ export function BaseEditor({
     onMount
 }: BaseEditorProps) {
     const { theme, resolvedTheme } = useTheme()
+    const { editorFontSize } = useSettings()
 
     // Fallback to resolvedTheme to ensure proper styling if system theme is used
     const editorTheme = (theme === 'dark' || resolvedTheme === 'dark') ? 'vs-dark' : 'light'
@@ -35,7 +37,7 @@ export function BaseEditor({
             options={{
                 readOnly: !isEditable,
                 minimap: { enabled: false },
-                fontSize: 14,
+                fontSize: editorFontSize,
                 wordWrap: "on",
                 scrollBeyondLastLine: false,
                 automaticLayout: true,

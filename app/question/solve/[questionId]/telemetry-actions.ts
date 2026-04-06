@@ -48,7 +48,8 @@ export async function updateTelemetrySession(
         cut_count: number,
         paste_count: number,
         submission_attempts: number
-    }
+    },
+    total_time_ms?: number
 ) {
     if (DISABLE_TELEMETRY) return { success: true }
 
@@ -62,6 +63,7 @@ export async function updateTelemetrySession(
             final_code: finalCode,
             is_passed: isPassed,
             ended_at: new Date().toISOString(),
+            total_time_ms,
             ...(counts || {})
         })
         .eq('id', sessionId)

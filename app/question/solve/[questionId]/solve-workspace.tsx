@@ -20,6 +20,7 @@ import { CodeFile } from '@/components/code-editor/full-editor'
 import { Tables } from '@/types/supabase'
 import { useTelemetry } from '@/providers/telemetry-provider'
 import { useEffect } from 'react'
+import { SettingsDialog } from '@/components/settings-dialog'
 
 export type QuestionWithDetails = Tables<"question_details"> & {
     content_item: {
@@ -36,7 +37,7 @@ export default function SolveWorkspace({ questionInfo }: { questionInfo: Questio
     const [submitResults, setSubmitResults] = useState<Record<string, SubmitResult>>({})
     const latestFilesRef = useRef<CodeFile[]>([])
     const [chatMessages, setChatMessages] = useState<{ id: string, role: string, content: string }[]>([])
-
+    const [settingsOpen, setSettingsOpen] = useState(false)
     const telemetry = useTelemetry()
     const submitResultsRef = useRef(submitResults)
     submitResultsRef.current = submitResults
@@ -47,7 +48,7 @@ export default function SolveWorkspace({ questionInfo }: { questionInfo: Questio
                 const finalCode = latestFilesRef.current.map(f => `${f.name}:\n${f.content || ''}`).join('\n\n')
                 const results = submitResultsRef.current
                 const passedVals = Object.values(results)
-                const isPassed = passedVals.length > 0 && passedVals.every(r => (r as any).passed === true)
+                const isPassed = passedVals.length > 0 && passedVals.every(r => r.passedTests === true)
                 return { finalCode, isPassed }
             })
         }
@@ -69,11 +70,27 @@ export default function SolveWorkspace({ questionInfo }: { questionInfo: Questio
             setSubmitResults(results);
 
             const passedVals = Object.values(results);
-            const isPassed = passedVals.length > 0 && passedVals.every(r => (r as any).passed === true);
-            telemetry?.track('SUBMIT', {
+            const isPassed = passedVals.length > 0 && passedVals.every(r => r.passedTests === true);
+
+            const submitPayload: Record<string, unknown> = {
                 status: isPassed ? 'passed' : 'failed',
-                code_snapshot: currentFiles
-            });
+                code_snapshot: currentFiles,
+            };
+
+            if (!isPassed) {
+                const failed = passedVals.find(r => !r.passedTests);
+                if (failed) {
+                    submitPayload.failed_test = {
+                        input: failed.input,
+                        expected: failed.expectedResult,
+                        actual: failed.result,
+                        error: failed.error,
+                    };
+                }
+            }
+
+            telemetry?.track('SUBMIT', submitPayload);
+            telemetry?.updateSession();
         } catch (error) {
             console.error(error);
             // Optionally could set error state here, but for now we log it
@@ -112,16 +129,19 @@ export default function SolveWorkspace({ questionInfo }: { questionInfo: Questio
                     </Button>
                 }
                 right={
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Settings className="h-5 w-5" />
-                    </Button>
+                    <>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSettingsOpen(true)}>
+                            <Settings className="h-5 w-5" />
+                        </Button>
+                        <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+                    </>
                 }
             />
 
             {/* Main Split Layout */}
             <div className="flex-1 overflow-hidden min-h-0 relative">
                 <ResizablePanelGroup orientation="horizontal">
-                    <ResizablePanel defaultSize="30" minSize="20" className="flex flex-col">
+                    <ResizablePanel id="info" defaultSize="30" minSize="20" collapsible collapsedSize={0} className="flex flex-col">
                         <InfoPane
                             questionInfo={questionInfo?.instructions}
                             answer={questionInfo?.answers?.[0]?.content}
@@ -147,7 +167,7 @@ export default function SolveWorkspace({ questionInfo }: { questionInfo: Questio
 
                             <ResizableHandle className="h-2 bg-muted hover:bg-muted-foreground/20 transition-colors cursor-row-resize" />
 
-                            <ResizablePanel minSize="20" defaultSize="30">
+                            <ResizablePanel id="test-cases" minSize="20" defaultSize="30" collapsible collapsedSize={0}>
                                 <TestCasesPane
                                     testCases={questionInfo?.test_cases}
                                     submitResults={submitResults}

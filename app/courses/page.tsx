@@ -20,7 +20,7 @@ export default async function CoursesPage() {
             
             courses(*)
         `)
-        .eq('user_id', user?.id)
+        .eq('user_id', user?.id ?? '')
 
 
     console.log({ data })

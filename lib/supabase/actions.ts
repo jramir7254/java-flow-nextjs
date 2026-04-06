@@ -18,9 +18,10 @@ export async function enrollToCourse(formData: FormData) {
 
     console.log('AS:FSJIL:', { courseCode, userID: user.user?.id })
 
+    if (!courseCode) throw new Error('Course code is required')
 
-    const { data: course } = await supabase.from('courses').select('*').eq('course_code', courseCode).single()
-    const { data: e } = await supabase.from('course_enrollments').select('*').eq('course_id', course?.id).eq('user_id', user.user?.id).single()
+    const { data: course } = await supabase.from('courses').select('*').eq('course_code', courseCode as string).single()
+    const { data: e } = await supabase.from('course_enrollments').select('*').eq('course_id', course?.id ?? '').eq('user_id', user.user?.id ?? '').single()
 
 
     if (!course) throw new Error('Course not found')
@@ -66,7 +67,7 @@ export async function getFileContents(item: ContentItem) {
 
     if (item.type === 'file') {
         const { data, error } = await supabase.from('md_file_details').select('*').eq('id', item.id).single()
-        return data.markdown_content
+        return data?.markdown_content ?? ''
     }
 
     if (item.type === 'question') {

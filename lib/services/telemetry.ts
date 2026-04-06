@@ -18,7 +18,9 @@ export class TelemetryManager {
     private sessionId: string | null = null;
     private flushInterval: any;
     private isFlushing = false;
+    private initPromise: Promise<void> | null = null;
     private questionId: string;
+    private startedAt: number;
     private stateGetter?: () => { finalCode: string, isPassed?: boolean };
     private counts = {
         ai_prompt_count: 0,
@@ -30,6 +32,7 @@ export class TelemetryManager {
 
     constructor(questionId: string) {
         this.questionId = questionId;
+        this.startedAt = Date.now();
     }
 
     public start() {
@@ -41,15 +44,21 @@ export class TelemetryManager {
 
     private async initSession() {
         if (this.sessionId) return;
+        if (this.initPromise) return this.initPromise;
 
-        try {
-            const res = await initTelemetrySession(this.questionId);
-            if (res.success && res.sessionId) {
-                this.sessionId = res.sessionId;
+        this.initPromise = (async () => {
+            try {
+                const res = await initTelemetrySession(this.questionId);
+                if (res.success && res.sessionId) {
+                    this.sessionId = res.sessionId;
+                }
+            } catch (e) {
+                console.error('Failed to init telemetry session', e);
+                this.initPromise = null;
             }
-        } catch (e) {
-            console.error('Failed to init telemetry session', e);
-        }
+        })();
+
+        return this.initPromise;
     }
 
     public track(type: TelemetryEventType, payload: any = {}) {
@@ -134,6 +143,23 @@ export class TelemetryManager {
         this.stateGetter = getter;
     }
 
+    public async updateSession() {
+        if (!this.sessionId) return;
+
+        let finalCode = "";
+        let isPassed: boolean | undefined;
+
+        if (this.stateGetter) {
+            const state = this.stateGetter();
+            finalCode = state.finalCode;
+            isPassed = state.isPassed;
+        }
+
+        await this.flush();
+        const total_time_ms = Date.now() - this.startedAt;
+        await updateTelemetrySession(this.sessionId, finalCode, isPassed, { ...this.counts }, total_time_ms).catch(e => console.error('Failed to update session', e));
+    }
+
     public async destroy() {
         if (this.flushInterval) {
             clearInterval(this.flushInterval);
@@ -149,11 +175,11 @@ export class TelemetryManager {
             isPassed = state.isPassed ?? false
         }
 
-        // flush any remaining events synchronously before session close
         await this.flush();
 
         if (this.sessionId) {
-            await updateTelemetrySession(this.sessionId, finalCode, isPassed, this.counts).catch(e => console.error('Failed to close session', e));
+            const total_time_ms = Date.now() - this.startedAt;
+            await updateTelemetrySession(this.sessionId, finalCode, isPassed, this.counts, total_time_ms).catch(e => console.error('Failed to close session', e));
         }
     }
 }

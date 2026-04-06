@@ -91,7 +91,6 @@ export default function AddCourseButton() {
 
                     {course && (
                         <div>
-                            <p>{course.id}</p>
                             <p>{course.name}</p>
                             <p>{course.course_code}</p>
                         </div>
@@ -105,6 +104,7 @@ export default function AddCourseButton() {
                             try {
                                 await enrollToCourse2(course.id)
                                 toast.success('Enrolled')
+                                setOpenInfo(false)
                                 router.refresh()
                             } catch (error: any) {
                                 toast.error(String(error))

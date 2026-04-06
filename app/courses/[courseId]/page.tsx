@@ -18,16 +18,18 @@ export default async function CoursePage({
         supabase.from('courses').select('*').eq('id', courseId).single()
     ])
 
-    const contentItems = contentRes.data
+    const contentItems = contentRes.data ?? []
     const course = courseRes.data
 
-    // Build the Tree Structure
-    const itemMap = Object.fromEntries(
-        contentItems?.map(item => [item.id, { ...item, children: [] }]) || []
+    type ContentRow = typeof contentItems[number]
+    interface TreeNode extends ContentRow { children: TreeNode[] }
+
+    const itemMap: Record<string, TreeNode> = Object.fromEntries(
+        contentItems.map(item => [item.id, { ...item, children: [] }])
     );
 
-    const rootContents = [];
-    contentItems?.forEach(item => {
+    const rootContents: TreeNode[] = [];
+    contentItems.forEach(item => {
         const node = itemMap[item.id];
         if (item.parent_id && itemMap[item.parent_id]) {
             itemMap[item.parent_id].children.push(node);
@@ -39,7 +41,7 @@ export default async function CoursePage({
     return (
         <ScrollArea className='h-full max-h-[90vh] p-6'>
             <div className='flex flex-col gap-2 max-w-2xl '>
-                {rootContents?.sort((a, b) => a?.order_index < b?.order_index)?.map(item => (
+                {rootContents.sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0)).map(item => (
                     <CourseItem key={item.id} item={item} />
                 ))}
             </div>

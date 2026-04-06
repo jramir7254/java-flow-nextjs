@@ -2,12 +2,32 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { SubmitResult } from './_panes/test-cases-pane'
+import JSZip from 'jszip'
 
-const PISTON_API_URL = 'https://emkc.org/api/v2/piston/execute';
+const JUDGE0_API_URL = process.env.JUDGE0_API_URL!
+const JUDGE0_API_KEY = process.env.JUDGE0_API_KEY!
+const JUDGE0_HOST = new URL(JUDGE0_API_URL).hostname
+const MULTIFILE_LANGUAGE_ID = 89
 
 export interface CodeSubmissionFile {
     fileName: string;
     content: string;
+}
+
+async function buildZip(
+    files: CodeSubmissionFile[],
+    entryFileName: string
+): Promise<string> {
+    const zip = new JSZip()
+    for (const f of files) {
+        zip.file(f.fileName, f.content)
+    }
+
+    const className = entryFileName.replace(/\.java$/, '')
+    zip.file('compile', `javac ${entryFileName}\n`)
+    zip.file('run', `java ${className}\n`)
+
+    return zip.generateAsync({ type: 'base64' })
 }
 
 export async function submitSolution(
@@ -31,52 +51,57 @@ export async function submitSolution(
             return {};
         }
 
-        const pistonFiles = files.map(f => ({
-            name: f.fileName,
-            content: f.content
-        }));
-
         const results: Record<string, SubmitResult> = {};
-        let allPassedSoFar = true;
 
         for (const tc of testCases) {
-            const payload = {
-                language: 'java',
-                version: '15.0.2',
-                files: pistonFiles,
+            const entryFile = files.find(f => f.fileName === tc.entry_file_name)
+                ?? files[0];
+
+            const additionalFiles = await buildZip(files, entryFile.fileName);
+
+            const body = {
+                language_id: MULTIFILE_LANGUAGE_ID,
                 stdin: tc.input || '',
-                args: []
+                additional_files: additionalFiles,
             };
 
-            const pistonRes = await fetch(PISTON_API_URL, {
+            const res = await fetch(`${JUDGE0_API_URL}/submissions/?wait=true`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-RapidAPI-Key': JUDGE0_API_KEY,
+                    'X-RapidAPI-Host': JUDGE0_HOST,
+                },
+                body: JSON.stringify(body),
             });
 
-            if (!pistonRes.ok) {
-                const errorData = await pistonRes.json().catch(() => ({}));
-                throw new Error(`Piston API error ${pistonRes.status}: ${errorData.message || 'Unknown error'}`);
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                throw new Error(`Judge0 API error ${res.status}: ${(errorData as any).message || 'Unknown error'}`);
             }
 
-            const pistonData = await pistonRes.json();
+            const data = await res.json();
 
-            const output = pistonData.run?.stdout?.trim() || "";
-            const stderr = pistonData.run?.stderr || "";
+            const stdout = (data.stdout ?? '').trim();
+            const stderr = data.stderr || '';
+            const compileOutput = data.compile_output || '';
+            const statusId: number = data.status?.id;
             const expected = (tc.expected_output || '').trim();
 
-            const passedTests = !stderr && output === expected;
+            const error = [stderr, compileOutput].filter(Boolean).join('\n') || undefined;
+
+            const isAccepted = statusId === 3;
+            const passedTests = isAccepted && !error && stdout === expected;
 
             results[tc.id] = {
                 input: tc.input || '',
-                result: output,
+                result: stdout,
                 expectedResult: expected,
-                passedTests: passedTests,
-                error: stderr || undefined
+                passedTests,
+                error,
             };
 
             if (!passedTests) {
-                allPassedSoFar = false;
                 break;
             }
         }

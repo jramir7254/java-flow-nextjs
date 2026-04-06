@@ -38,6 +38,7 @@ export default async function SolvePage({
                 id,
                 input,
                 expected_output,
+                entry_file_name,
                 is_public,
                 is_example
             ),
